@@ -85,12 +85,13 @@ class VersionBehavior extends Behavior
     public function setupFieldAssociations($table)
     {
         $alias = $this->_table->alias();
+        $target = TableRegistry::get($table);
 
         foreach ($this->_fields() as $field) {
             $name = $this->_table->alias() . '_' . $field . '_' . $table;
 
             $this->_table->hasOne($name, [
-                'className' => $table,
+                'targetTable' => $target,
                 'foreignKey' => 'foreign_key',
                 'joinType' => 'LEFT',
                 'conditions' => [
@@ -101,7 +102,8 @@ class VersionBehavior extends Behavior
             ]);
         }
 
-        $this->_table->hasMany($table, [
+        $this->_table->hasMany($target->alias(), [
+            'targetTable' => $target,
             'foreignKey' => 'foreign_key',
             'strategy' => 'subquery',
             'conditions' => ["$table.model" => $alias],
