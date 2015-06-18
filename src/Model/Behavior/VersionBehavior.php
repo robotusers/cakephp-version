@@ -294,7 +294,7 @@ class VersionBehavior extends Behavior
     /**
      * Extracts filter fields from an entity.
      *
-     * @param \Cake\Datasource\EntityInterface $entity
+     * @param \Cake\Datasource\EntityInterface $entity An entity to filter against.
      * @return array
      */
     protected function _extractFilter(EntityInterface $entity)
@@ -308,7 +308,7 @@ class VersionBehavior extends Behavior
     /**
      * Extracts filter fields from an entity for select.
      *
-     * @param EntityInterface $entity
+     * @param EntityInterface $entity An entity to filter against.
      * @return array
      */
     protected function _selectFilter(EntityInterface $entity)
