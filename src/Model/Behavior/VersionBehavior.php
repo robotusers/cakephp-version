@@ -93,10 +93,10 @@ class VersionBehavior extends Behavior
         $target = TableRegistry::get($table);
 
         foreach ($this->_fields() as $field) {
-            $name = $this->_table->alias() . '_' . $field . static::ASSOC_SUFFIX;
+            $name = $this->_table->alias() . '_' . $field . '_' . $table;
 
             $this->_table->hasOne($name, [
-                'targetTable' => $target,
+                'className' => $table,
                 'foreignKey' => 'foreign_key',
                 'joinType' => 'LEFT',
                 'conditions' => [
