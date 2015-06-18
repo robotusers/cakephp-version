@@ -1,5 +1,5 @@
 {
-	"name": "josegonzalez/cakephp-version",
+	"name": "robotusers/cakephp-version",
 	"description": "CakePHP plugin to allow versioning of records",
 	"type": "cakephp-plugin",
 	"keywords": ["cakephp", "revision", "version"],
@@ -9,6 +9,10 @@
 		{
 			"name": "Jose Diaz-Gonzalez",
 			"email": "cakephp+version@josediazgonzalez.com"
+		},
+		{
+			"name": "Robert Pustulka",
+			"email": "r.pustulka@zano.pl"
 		}
 	],
 	"require": {
