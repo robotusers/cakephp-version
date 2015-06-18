@@ -69,15 +69,14 @@ class VersionBehavior extends Behavior
      */
     public function initialize(array $config)
     {
-        $config = $this->config();
-        $this->setupFieldAssociations($config['versionTable']);
+        $this->setupFieldAssociations($this->_config['versionTable']);
     }
 
     /**
      * Creates the associations between the bound table and every field passed to
      * this method.
      *
-     * Additionally it creates a `i18n` HasMany association that will be
+     * Additionally it creates a `version` HasMany association that will be
      * used for fetching all versions for each record in the bound table
      *
      * @param string $table the table name to use for storing each field version
@@ -88,12 +87,10 @@ class VersionBehavior extends Behavior
         $alias = $this->_table->alias();
 
         foreach ($this->_fields() as $field) {
-            $name = $this->_table->alias() . '_' . $field . '_version';
-            $target = TableRegistry::get($name);
-            $target->table($table);
+            $name = $this->_table->alias() . '_' . $field . '_' . $table;
 
             $this->_table->hasOne($name, [
-                'targetTable' => $target,
+                'className' => $table,
                 'foreignKey' => 'foreign_key',
                 'joinType' => 'LEFT',
                 'conditions' => [
@@ -124,8 +121,8 @@ class VersionBehavior extends Behavior
      */
     public function beforeSave(Event $event, Entity $entity, ArrayObject $options)
     {
-        $table = $this->_config['versionTable'];
-        $newOptions = [$table => ['validate' => false]];
+        $table = TableRegistry::get($this->_config['versionTable']);
+        $newOptions = [$table->alias() => ['validate' => false]];
         $options['associated'] = $newOptions + $options['associated'];
 
         $fields = $this->_fields();
@@ -137,7 +134,7 @@ class VersionBehavior extends Behavior
         $foreignKey = $entity->get($primaryKey);
         $versionField = $this->_config['versionField'];
 
-        $preexistent = TableRegistry::get($table)->find()
+        $preexistent = $table->find()
             ->select(['version_id'])
             ->where(compact('foreign_key', 'model'))
             ->order(['id desc'])
@@ -161,7 +158,7 @@ class VersionBehavior extends Behavior
                 'content' => $content,
                 'created' => $created,
             ];
-            $new[$field] = new Entity($data, [
+            $new[$field] = $table->newEntity($data, [
                 'useSetters' => false,
                 'markNew' => true
             ]);
