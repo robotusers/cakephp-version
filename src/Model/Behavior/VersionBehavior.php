@@ -37,6 +37,9 @@ use Cake\Utility\Hash;
 class VersionBehavior extends Behavior
 {
 
+    const ASSOC_SUFFIX = '_version';
+    const PROPERTY_NAME = '__version';
+
     /**
      * Table instance
      *
@@ -88,7 +91,7 @@ class VersionBehavior extends Behavior
         $target = TableRegistry::get($table);
 
         foreach ($this->_fields() as $field) {
-            $name = $this->_table->alias() . '_' . $field . '_' . $table;
+            $name = $this->_table->alias() . '_' . $field . static::ASSOC_SUFFIX;
 
             $this->_table->hasOne($name, [
                 'targetTable' => $target,
@@ -98,7 +101,7 @@ class VersionBehavior extends Behavior
                     $name . '.model' => $alias,
                     $name . '.field' => $field,
                 ],
-                'propertyName' => $field . '_version'
+                'propertyName' => $field . static::ASSOC_SUFFIX
             ]);
         }
 
@@ -107,7 +110,7 @@ class VersionBehavior extends Behavior
             'foreignKey' => 'foreign_key',
             'strategy' => 'subquery',
             'conditions' => ["$table.model" => $alias],
-            'propertyName' => '__version',
+            'propertyName' => static::PROPERTY_NAME,
             'dependent' => true
         ]);
     }
@@ -166,7 +169,7 @@ class VersionBehavior extends Behavior
             ]);
         }
 
-        $entity->set('__version', $new);
+        $entity->set(static::PROPERTY_NAME, $new);
         if (!empty($versionField) && in_array($versionField, $fields)) {
             $entity->set($this->_config['versionField'], $versionId);
         }
@@ -181,7 +184,7 @@ class VersionBehavior extends Behavior
      */
     public function afterSave(Event $event, Entity $entity)
     {
-        $entity->unsetProperty('__version');
+        $entity->unsetProperty(static::PROPERTY_NAME);
     }
 
     /**
@@ -202,7 +205,9 @@ class VersionBehavior extends Behavior
      */
     public function findVersions(Query $query, array $options)
     {
-        $table = $this->_config['versionTable'];
+        $versionTable = TableRegistry::get($this->_config['versionTable']);
+        $table = $versionTable->alias();
+
         return $query
             ->contain([$table => function ($q) use ($table, $options) {
                 if (!empty($options['primaryKey'])) {
@@ -227,7 +232,7 @@ class VersionBehavior extends Behavior
     public function groupVersions($results)
     {
         return $results->map(function ($row) {
-            $versions = (array)$row->get('__version');
+            $versions = (array)$row->get(static::PROPERTY_NAME);
             $grouped = new Collection($versions);
 
             $result = [];
@@ -242,7 +247,7 @@ class VersionBehavior extends Behavior
 
             $options = ['setter' => false, 'guard' => false];
             $row->set('_versions', $result, $options);
-            unset($row['__version']);
+            unset($row[static::PROPERTY_NAME]);
             $row->clean();
             return $row;
         });
