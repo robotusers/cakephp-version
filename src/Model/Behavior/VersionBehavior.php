@@ -16,10 +16,10 @@ namespace Josegonzalez\Version\Model\Behavior;
 
 use ArrayObject;
 use Cake\Collection\Collection;
+use Cake\Datasource\EntityInterface;
 use Cake\Event\Event;
 use Cake\I18n\Time;
 use Cake\ORM\Behavior;
-use Cake\ORM\Entity;
 use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
@@ -58,7 +58,8 @@ class VersionBehavior extends Behavior
         'implementedFinders' => ['versions' => 'findVersions'],
         'versionTable' => 'version',
         'versionField' => 'version_id',
-        'fields' => null
+        'fields' => null,
+        'filterFields' => []
     ];
 
     /**
@@ -120,11 +121,11 @@ class VersionBehavior extends Behavior
      * in the database too.
      *
      * @param \Cake\Event\Event $event The beforeSave event that was fired
-     * @param \Cake\ORM\Entity $entity The entity that is going to be saved
+     * @param \Cake\Datasource\EntityInterface $entity The entity that is going to be saved
      * @param \ArrayObject $options the options passed to the save method
      * @return void
      */
-    public function beforeSave(Event $event, Entity $entity, ArrayObject $options)
+    public function beforeSave(Event $event, EntityInterface $entity, ArrayObject $options)
     {
         $table = TableRegistry::get($this->_config['versionTable']);
         $newOptions = [$table->alias() => ['validate' => false]];
@@ -134,8 +135,7 @@ class VersionBehavior extends Behavior
         $values = $entity->extract($fields);
 
         $model = $this->_table->alias();
-        $primaryKey = (array)$this->_table->primaryKey();
-        $primaryKey = current($primaryKey);
+        $primaryKey = $this->_primaryKey();
         $foreignKey = $entity->get($primaryKey);
         $versionField = $this->_config['versionField'];
 
@@ -155,6 +155,7 @@ class VersionBehavior extends Behavior
                 continue;
             }
 
+            $filter = $this->_extractFilter($entity);
             $data = [
                 'version_id' => $versionId,
                 'model' => $model,
@@ -162,7 +163,8 @@ class VersionBehavior extends Behavior
                 'field' => $field,
                 'content' => $content,
                 'created' => $created,
-            ];
+            ] + $filter;
+
             $new[$field] = $table->newEntity($data, [
                 'useSetters' => false,
                 'markNew' => true
@@ -179,10 +181,10 @@ class VersionBehavior extends Behavior
      * Unsets the temporary `__version` property after the entity has been saved
      *
      * @param \Cake\Event\Event $event The beforeSave event that was fired
-     * @param \Cake\ORM\Entity $entity The entity that is going to be saved
+     * @param \Cake\Datasource\EntityInterface $entity The entity that is going to be saved
      * @return void
      */
-    public function afterSave(Event $event, Entity $entity)
+    public function afterSave(Event $event, EntityInterface $entity)
     {
         $entity->unsetProperty(static::PROPERTY_NAME);
     }
@@ -207,16 +209,25 @@ class VersionBehavior extends Behavior
     {
         $versionTable = TableRegistry::get($this->_config['versionTable']);
         $table = $versionTable->alias();
-
         return $query
-            ->contain([$table => function ($q) use ($table, $options) {
-                if (!empty($options['primaryKey'])) {
+            ->contain([$table => function (Query $q) use ($table, $options) {
+                if (!empty($options['entity'])) {
+                    $entity = $options['entity'];
+
+                    $primaryKey = $this->_primaryKey();
+                    $foreignKey = $entity->get($primaryKey);
+
+                    $conditions = ["$table.foreign_key IN" => $foreignKey];
+                    $conditions += $this->_selectFilter($entity);
+                    $q->where($conditions);
+                } elseif (!empty($options['primaryKey'])) {
                     $q->where(["$table.foreign_key IN" => $options['primaryKey']]);
                 }
                 if (!empty($options['versionId'])) {
                     $q->where(["$table.version_id IN" => $options['versionId']]);
                 }
-                $q->where(['field IN' => $this->_fields()]);
+                $q->where(["$table.field IN" => $this->_fields()]);
+
                 return $q;
             }])
             ->formatResults([$this, 'groupVersions'], $query::PREPEND);
@@ -267,5 +278,45 @@ class VersionBehavior extends Behavior
         }
 
         return $fields;
+    }
+
+    /**
+     * Returns simple primary key. No support for composite keys yet.
+     *
+     * @return string
+     */
+    protected function _primaryKey()
+    {
+        $primaryKey = (array)$this->_table->primaryKey();
+        return current($primaryKey);
+    }
+
+    /**
+     * Extracts filter fields from an entity.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity An entity to filter against.
+     * @return array
+     */
+    protected function _extractFilter(EntityInterface $entity)
+    {
+        $filterFields = (array)$this->_config['filterFields'];
+        $filter = $entity->extract($filterFields);
+
+        return $filter;
+    }
+
+    /**
+     * Extracts filter fields from an entity for select.
+     *
+     * @param EntityInterface $entity An entity to filter against.
+     * @return array
+     */
+    protected function _selectFilter(EntityInterface $entity)
+    {
+        $filter = [];
+        foreach ($this->_extractFilter($entity) as $field => $value) {
+            $filter["$field is"] = $value;
+        }
+        return $filter;
     }
 }

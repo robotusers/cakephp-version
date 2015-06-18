@@ -1,9 +1,7 @@
 <?php
 namespace Josegonzalez\Version\Model\Behavior\Version;
 
-use Cake\ORM\Entity;
 use Cake\ORM\TableRegistry;
-use LogicException;
 
 trait VersionTrait
 {
@@ -36,11 +34,12 @@ trait VersionTrait
             return $this->get('_versions');
         }
 
-        $conditions = ['primaryKey' => $this->id];
+        $options = [
+            'entity' => $this
+        ];
 
         $table = TableRegistry::get($this->source());
-        $entities = $table->find('versions', $conditions)
-                        ->all();
+        $entities = $table->find('versions', $options)->all();
 
         if (empty($entities)) {
             return [];
