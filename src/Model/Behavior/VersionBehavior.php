@@ -106,11 +106,12 @@ class VersionBehavior extends Behavior
             ]);
         }
 
-        $this->_table->hasMany($target->alias(), [
+        $versionsName = $target->alias();
+        $this->_table->hasMany($versionsName, [
             'targetTable' => $target,
             'foreignKey' => 'foreign_key',
             'strategy' => 'subquery',
-            'conditions' => ["$table.model" => $alias],
+            'conditions' => [$versionsName . '.model' => $alias],
             'propertyName' => static::PROPERTY_NAME,
             'dependent' => true
         ]);
