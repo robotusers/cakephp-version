@@ -22,7 +22,6 @@ use Cake\Event\EventManager;
 use Cake\I18n\Time;
 use Cake\ORM\Behavior;
 use Cake\ORM\Query;
-use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 
