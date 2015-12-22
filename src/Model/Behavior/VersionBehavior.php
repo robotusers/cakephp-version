@@ -24,6 +24,7 @@ use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
+use Cake\Event\EventManager;
 
 /**
  * This behavior provides a way to version dynamic data by keeping versions
@@ -165,6 +166,12 @@ class VersionBehavior extends Behavior
                 'content' => $content,
                 'created' => $created,
             ] + $filter;
+
+            $event = new Event('Model.Version.beforeSave', $this, $options);
+            $user_data = EventManager::instance()->dispatch($event);
+            if (isset($user_data->result) && is_array($user_data->result)) {
+                $data = array_merge($data, $user_data->result);
+            }
 
             $new[$field] = $table->newEntity($data, [
                 'useSetters' => false,
