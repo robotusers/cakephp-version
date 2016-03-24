@@ -34,11 +34,13 @@ trait VersionTrait
             return $this->get('_versions');
         }
 
+        $table = TableRegistry::get($this->source());
+        $primaryKey = $table->primaryKey();
         $options = [
-            'entity' => $this
+            'entity' => $this,
+            'conditions' => [$primaryKey => $this->id]
         ];
 
-        $table = TableRegistry::get($this->source());
         $entities = $table->find('versions', $options)->all();
 
         if (empty($entities)) {
