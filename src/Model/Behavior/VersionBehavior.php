@@ -137,6 +137,7 @@ class VersionBehavior extends Behavior
         $values = $entity->extract($fields);
 
         $model = $this->_table->alias();
+
         $primaryKey = $this->_primaryKey();
         $foreignKey = $entity->get($primaryKey);
         $versionField = $this->_config['versionField'];
