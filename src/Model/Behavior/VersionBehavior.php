@@ -137,14 +137,16 @@ class VersionBehavior extends Behavior
         $values = $entity->extract($fields);
 
         $model = $this->_table->alias();
-
         $primaryKey = $this->_primaryKey();
         $foreignKey = $entity->get($primaryKey);
         $versionField = $this->_config['versionField'];
 
         $preexistent = $table->find()
             ->select(['version_id'])
-            ->where(compact('foreign_key', 'model'))
+            ->where([
+                'foreign_key' => $foreignKey,
+                'model' => $model
+            ])
             ->order(['id desc'])
             ->limit(1)
             ->hydrate(false)
